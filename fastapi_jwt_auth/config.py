@@ -97,5 +97,5 @@ class LoadConfig(BaseModel):
         return response
 
     class Config:
-        min_anystr_length = 1
-        anystr_strip_whitespace = True
+        str_min_length = 1
+        str_strip_whitespace = True

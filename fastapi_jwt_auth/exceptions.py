@@ -87,3 +87,11 @@ class FreshTokenRequired(AuthJWTException):
     def __init__(self, status_code: int, message: str):
         self.status_code = status_code
         self.message = message
+
+class TokenExpired(AuthJWTException):
+    """
+    Error raised when token expired
+    """
+    def __init__(self,status_code: int, message: str):
+        self.status_code = status_code
+        self.message = message

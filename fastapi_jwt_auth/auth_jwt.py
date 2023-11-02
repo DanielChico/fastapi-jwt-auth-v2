@@ -13,6 +13,7 @@ from fastapi_jwt_auth.exceptions import (
     AccessTokenRequired,
     RefreshTokenRequired,
     FreshTokenRequired,
+    TokenExpired
 )
 
 
@@ -711,6 +712,8 @@ class AuthJWT(AuthConfig):
                 leeway=self._decode_leeway,
                 algorithms=algorithms,
             )
+        except jwt.ExpiredSignatureError:
+            raise TokenExpired(403, 'Token expired')
         except Exception as err:
             raise JWTDecodeError(status_code=422, message=str(err))
 
