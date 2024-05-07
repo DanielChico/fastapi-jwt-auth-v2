@@ -1,10 +1,15 @@
-import pytest, jwt, time, os
-from fastapi_jwt_auth import AuthJWT
-from fastapi_jwt_auth.exceptions import AuthJWTException
-from fastapi import FastAPI, Depends, Request
+import os
+import time
+
+import jwt
+import pytest
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 from pydantic_settings import BaseSettings
+
+from fastapi_jwt_auth import AuthJWT
+from fastapi_jwt_auth.exceptions import AuthJWTException
 
 
 @pytest.fixture(scope="function")
@@ -13,9 +18,7 @@ def client():
 
     @app.exception_handler(AuthJWTException)
     def authjwt_exception_handler(request: Request, exc: AuthJWTException):
-        return JSONResponse(
-            status_code=exc.status_code, content={"detail": exc.message}
-        )
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
     @app.get("/protected")
     def protected(Authorize: AuthJWT = Depends()):
@@ -53,9 +56,7 @@ def default_access_token():
 
 @pytest.fixture(scope="function")
 def encoded_token(default_access_token):
-    return jwt.encode(default_access_token, "secret-key", algorithm="HS256").decode(
-        "utf-8"
-    )
+    return jwt.encode(default_access_token, "secret-key", algorithm="HS256")
 
 
 def test_verified_token(client, encoded_token, Authorize):
@@ -72,7 +73,7 @@ def test_verified_token(client, encoded_token, Authorize):
     assert response.status_code == 422
     assert response.json() == {"detail": "Not enough segments"}
     # InvalidSignatureError
-    token = jwt.encode({"some": "payload"}, "secret", algorithm="HS256").decode("utf-8")
+    token = jwt.encode({"some": "payload"}, "secret", algorithm="HS256")
     response = client.get("/protected", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 422
     assert response.json() == {"detail": "Signature verification failed"}
@@ -83,7 +84,7 @@ def test_verified_token(client, encoded_token, Authorize):
     assert response.status_code == 422
     assert response.json() == {"detail": "Signature has expired"}
     # InvalidAlgorithmError
-    token = jwt.encode({"some": "payload"}, "secret", algorithm="HS384").decode("utf-8")
+    token = jwt.encode({"some": "payload"}, "secret", algorithm="HS384")
     response = client.get("/protected", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 422
     assert response.json() == {"detail": "The specified alg value is not allowed"}
@@ -103,30 +104,22 @@ def test_verified_token(client, encoded_token, Authorize):
     time.sleep(2)
     # JWT payload is now expired
     # But with some leeway, it will still validate
-    response = client.get(
-        "/protected", headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = client.get("/protected", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == 200
     assert response.json() == {"hello": "world"}
 
-    response = client.get(
-        "/refresh_token", headers={"Authorization": f"Bearer {refresh_token}"}
-    )
+    response = client.get("/refresh_token", headers={"Authorization": f"Bearer {refresh_token}"})
     assert response.status_code == 200
     assert response.json() == "test"
 
     # Valid Token
-    response = client.get(
-        "/protected", headers={"Authorization": f"Bearer {encoded_token}"}
-    )
+    response = client.get("/protected", headers={"Authorization": f"Bearer {encoded_token}"})
     assert response.status_code == 200
     assert response.json() == {"hello": "world"}
 
 
 def test_get_raw_token(client, default_access_token, encoded_token):
-    response = client.get(
-        "/raw_token", headers={"Authorization": f"Bearer {encoded_token}"}
-    )
+    response = client.get("/raw_token", headers={"Authorization": f"Bearer {encoded_token}"})
     assert response.status_code == 200
     assert response.json() == default_access_token
 
@@ -140,9 +133,7 @@ def test_get_jwt_jti(client, default_access_token, encoded_token, Authorize):
 
 
 def test_get_jwt_subject(client, default_access_token, encoded_token):
-    response = client.get(
-        "/get_subject", headers={"Authorization": f"Bearer {encoded_token}"}
-    )
+    response = client.get("/get_subject", headers={"Authorization": f"Bearer {encoded_token}"})
     assert response.status_code == 200
     assert response.json() == default_access_token["sub"]
 
@@ -179,16 +170,12 @@ def test_valid_aud(client, Authorize, token_aud):
     AuthJWT._decode_audience = ["foo", "bar"]
 
     access_token = Authorize.create_access_token(subject=1, audience=token_aud)
-    response = client.get(
-        "/protected", headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = client.get("/protected", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == 200
     assert response.json() == {"hello": "world"}
 
     refresh_token = Authorize.create_refresh_token(subject=1, audience=token_aud)
-    response = client.get(
-        "/refresh_token", headers={"Authorization": f"Bearer {refresh_token}"}
-    )
+    response = client.get("/refresh_token", headers={"Authorization": f"Bearer {refresh_token}"})
     assert response.status_code == 200
     assert response.json() == 1
 
@@ -201,16 +188,12 @@ def test_invalid_aud_and_missing_aud(client, Authorize, token_aud):
     AuthJWT._decode_audience = "foo"
 
     access_token = Authorize.create_access_token(subject=1, audience=token_aud)
-    response = client.get(
-        "/protected", headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = client.get("/protected", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == 422
-    assert response.json() == {"detail": "Invalid audience"}
+    assert response.json() == {"detail": "Audience doesn't match"}
 
     refresh_token = Authorize.create_refresh_token(subject=1)
-    response = client.get(
-        "/refresh_token", headers={"Authorization": f"Bearer {refresh_token}"}
-    )
+    response = client.get("/refresh_token", headers={"Authorization": f"Bearer {refresh_token}"})
     assert response.status_code == 422
     assert response.json() == {"detail": 'Token is missing the "aud" claim'}
 
@@ -260,15 +243,11 @@ def test_valid_asymmetric_algorithms(client, Authorize):
 
     rs256_token = Authorize.create_access_token(subject=1)
 
-    response = client.get(
-        "/protected", headers={"Authorization": f"Bearer {hs256_token}"}
-    )
+    response = client.get("/protected", headers={"Authorization": f"Bearer {hs256_token}"})
     assert response.status_code == 422
     assert response.json() == {"detail": "The specified alg value is not allowed"}
 
-    response = client.get(
-        "/protected", headers={"Authorization": f"Bearer {rs256_token}"}
-    )
+    response = client.get("/protected", headers={"Authorization": f"Bearer {rs256_token}"})
     assert response.status_code == 200
     assert response.json() == {"hello": "world"}
 

@@ -3,8 +3,6 @@ class AuthJWTException(Exception):
     Base except which all fastapi_jwt_auth errors extend
     """
 
-    pass
-
 
 class InvalidHeaderError(AuthJWTException):
     """
