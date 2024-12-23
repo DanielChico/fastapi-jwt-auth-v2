@@ -4,13 +4,11 @@ version = "0.1.2"
 description = ""
 authors = ["Daniel Chico <chico@generalsoftwareinc.com>"]
 readme = "README.md"
-packages = [
-    { include = "fastapi_jwt_auth" },
-]
+packages = [{ include = "fastapi_jwt_auth" }]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.111.0"
+fastapi = "0.*"
 pyjwt = "^2.8.0"
 
 
